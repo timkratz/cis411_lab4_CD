@@ -8,6 +8,7 @@
   },
   "main": "server.js",
   "scripts": {
+    "deploy" : "npx gh-pages -b deploy --message '[skip ci] Updates' -d ./",   
     "run": "node server.js",
     "test": "exit 0"
   },

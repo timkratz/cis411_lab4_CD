@@ -22,44 +22,33 @@ jobs:
         
       # run tests!
       - run: yarn test
+  
   deploy:
+    working_directory: ~/repo
     docker:
-      - image: buildpack-deps:trusty
+      - image: circleci/node:11
     steps:
       - checkout
       - run:
-          name: Install dependencies
+          name: Configure Github credentials
           command: |
-            sudo apt-get update
-            sudo apt-get install -y python3-pip
-            pip3 install awscli
-            curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-            sudo apt-get install -y nodejs
+            git config user.email $GITHUB_EMAIL
+            git config user.name $GITHUB_USERNAME
+      - add_ssh_keys:
+          fingerprints:
+            - $GITHUB_FINGERPRINT
       - run:
-          name: Install doctl
-          command: |
-            wget https://github.com/digitalocean/doctl/releases/download/v1.64.0/doctl-1.64.0-linux-amd64.tar.gz
-            tar xf doctl-1.64.0-linux-amd64.tar.gz
-            sudo mv doctl /usr/local/bin
-            rm doctl-1.64.0-linux-amd64.tar.gz
-      - run:
-          name: Authenticate with DigitalOcean
-          command: |
-            doctl auth init --access-token $OCEAN_API_KEY
-            doctl kubernetes cluster kubeconfig save mycluster
-            kubectl config use-context do-myapp
-      - run:
-          name: Deploy to DigitalOcean
-          command: |
-            kubectl apply -f k8s
+          name: Deploy to Azure Web App Using Azure Container Registry Task
+          command: npm run deploy
+
 workflows:
   version: 2
-  build-deploy:
+  build:
     jobs:
       - build
       - deploy:
           requires:
-            - build
+            - build # only deploy once build job has completed
           filters:
             branches:
-              only: main
+              only: purelab # only deploy on the main branch
